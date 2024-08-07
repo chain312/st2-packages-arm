@@ -1,0 +1,12 @@
+../contrib/core opt/stackstorm/packs/
+../contrib/packs opt/stackstorm/packs/
+../contrib/linux opt/stackstorm/packs/
+../contrib/chatops opt/stackstorm/packs/
+../contrib/default opt/stackstorm/packs/
+../contrib/examples usr/share/doc/st2/
+../conf/nginx usr/share/doc/st2/conf/
+../st2actions/bin/runners.sh opt/stackstorm/st2/bin/
+../package.meta opt/stackstorm/st2/
+debian/st2api-generator lib/systemd/system-generators/
+debian/st2auth-generator lib/systemd/system-generators/
+debian/st2stream-generator lib/systemd/system-generators/

@@ -1,0 +1,114 @@
+version: "3.8"
+
+services:
+  focal:
+    image: stackstorm/packagingrunner
+    extends:
+      file: docker-compose.override.yml
+      service: suite-compose
+    environment:
+      - BUILDNODE=focalbuild
+      - ST2_PACKAGES=st2
+      - PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
+      - http_proxy=http://10.0.0.214:7890
+      - https_proxy=http://10.0.0.214:7890
+      - QEMU_EXECVE=1
+    links:
+      - focalbuild
+      - rabbitmq
+      - mongodb
+      - redis
+
+  el8:
+    image: xxx:0.0.1
+    extends:
+      file: docker-compose.override.yml
+      service: suite-compose
+    environment:
+      - BUILDNODE=rockylinux8build
+      - ST2_PACKAGES=st2
+      - PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
+      - HTTP_PROXY=http://10.0.0.214:7890
+      - HTTPS_PROXY=http://10.0.0.214:7890
+      - http_proxy=http://10.0.0.214:7890
+      - https_proxy=http://10.0.0.214:7890
+    links:
+      - rockylinux8build
+      - rabbitmq
+      - mongodb
+      - redis
+
+  el9:
+    image: quay.io/stackstorm/packagingrunner
+    extends:
+      file: docker-compose.override.yml
+      service: suite-compose
+    environment:
+      - BUILDNODE=rockylinux9build
+      - ST2_PACKAGES=st2
+      - HTTP_PROXY=http://10.0.0.214:7890
+      - HTTPS_PROXY=http://10.0.0.214:7890
+    links:
+      - rockylinux9build
+      - rabbitmq
+      - mongodb
+      - redis
+
+  ## Package build nodes
+  #
+  focalbuild:
+    image: stackstorm/packagingbuild:focal
+    extends:
+      file: docker-compose.override.yml
+      service: volumes-compose
+    environment:
+      - PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
+      - HTTPS_PROXY=http://10.0.0.214:7890
+      - HTTP_PROXY=http://10.0.0.214:7890
+      - http_proxy=http://10.0.0.214:7890
+      - https_proxy=http://10.0.0.214:7890
+
+  rockylinux8build:
+    image: stackstorm/packagingbuild:rockylinux8
+    extends:
+      file: docker-compose.override.yml
+      service: volumes-compose
+    environment:
+      - PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
+      - HTTP_PROXY=http://10.0.0.214:7890
+      - HTTPS_PROXY=http://10.0.0.214:7890
+      - http_proxy=http://10.0.0.214:7890
+      - https_proxy=http://10.0.0.214:7890
+
+  rockylinux9build:
+    image: stackstorm/packagingbuild:rockylinux9
+    extends:
+      file: docker-compose.override.yml
+      service: volumes-compose
+    environment:
+      - PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
+      - HTTP_PROXY=http://10.0.0.214:7890
+      - HTTPS_PROXY=http://10.0.0.214:7890
+      - http_proxy=http://10.0.0.214:7890
+      - https_proxy=http://10.0.0.214:7890
+
+  ## Package testing nodes
+  #
+
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    privileged: true
+    hostname: rabbit
+    ports:
+      - "15672:15672"  # managment plugin port
+      - "5672:5672"
+
+  mongodb:
+    image: mongo:4.4
+    ports:
+      - "27017:27017"
+
+  redis:
+    image: redis:7.2.4
+    ports:
+      - "6379:6379"

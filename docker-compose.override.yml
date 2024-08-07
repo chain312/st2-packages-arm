@@ -1,0 +1,37 @@
+## Suites configuration
+#
+services:
+  suite:
+    image: fake
+    working_dir: /root/st2-packages
+    environment:
+      - DEBUG_LEVEL=0
+    volumes:
+      - .:/root/st2-packages
+      - /tmp/st2-packages:/root/build
+
+  suite-compose:
+    image: fake
+    extends:
+      file: docker-compose.override.yml
+      service: suite
+
+  suite-circle:
+    image: fake
+    command: build
+    extends:
+      file: docker-compose.override.yml
+      service: suite
+
+  ## Volumes passed during compose or ci builds
+  #
+  volumes-compose:
+    image: fake
+    volumes:
+      - /tmp/st2-packages:/root/build
+
+  volumes-circle:
+    image: fake
+    volumes:
+      - /tmp/st2-packages:/root/build
+      - /tmp/st2-packages/log/st2:/var/log/st2
