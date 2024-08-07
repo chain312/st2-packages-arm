@@ -1,0 +1,73 @@
+#!/usr/bin/make -f
+# DH_VERBOSE = 1
+
+# see EXAMPLES in dpkg-buildflags(1) and read /usr/share/dpkg/*
+#DPKG_EXPORT_BUILDFLAGS = 1
+#include /usr/share/dpkg/default.mk
+
+# Virtualenv and pip should be updated (better not to use the distro defaults).
+# Updated ones can be found under /use/local.
+PATH = /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+WHEELDIR ?= /tmp/wheelhouse
+DH_VIRTUALENV_INSTALL_ROOT := /opt/stackstorm
+export DH_VIRTUALENV_INSTALL_ROOT
+PIP_VERSION = 20.3.3
+
+IS_SYSTEMD = $(shell command -v dh_systemd_enable > /dev/null 2>&1 && echo true)
+DEB_DISTRO := $(shell lsb_release -cs)
+
+BUILD_PRE_DEPENDS := python3 (>= 3.8)
+BUILD_DEPENDS := python3-distutils, python3-dev
+
+%:
+
+ifeq ($(DEB_DISTRO),focal)
+	dh $@ --with python-virtualenv --python /usr/bin/python3.8
+endif
+
+override_dh_installdirs:
+	dh_installdirs
+	# Restore dh_auto_install behaviour, because it was removed by dh_virtualenv
+	# dh_auto_install same with:
+	$(MAKE) install
+
+override_dh_gencontrol:
+	dh_gencontrol -- -Vpre:Depends="$(BUILD_PRE_DEPENDS)" -VDepends="$(BUILD_DEPENDS)"
+
+# Packaging recognizes only 1 {package_name} service file (http://manpages.ubuntu.com/manpages/xenial/man1/dh_installinit.1.html)
+# We have many, and so force it to install multiple service files
+override_dh_installinit:
+	dh_systemd_enable --name=st2actionrunner st2actionrunner.service
+	install -p -m644 debian/st2actionrunner@.service debian/st2/lib/systemd/system/st2actionrunner@.service
+	dh_systemd_enable --name=st2api st2api.service
+	dh_systemd_enable --name=st2stream st2stream.service
+	dh_systemd_enable --name=st2auth st2auth.service
+	dh_systemd_enable --name=st2notifier st2notifier.service
+	dh_systemd_enable --name=st2rulesengine st2rulesengine.service
+	dh_systemd_enable --name=st2sensorcontainer st2sensorcontainer.service
+	dh_systemd_enable --name=st2garbagecollector st2garbagecollector.service
+	dh_systemd_enable --name=st2timersengine st2timersengine.service
+	dh_systemd_enable --name=st2workflowengine st2workflowengine.service
+	dh_systemd_enable --name=st2scheduler st2scheduler.service
+
+override_dh_installdeb:
+	DESTDIR=debian/st2 $(MAKE) post_install
+	dh_installdeb
+
+override_dh_virtualenv:
+	# NB! Wheels must be pre-populated by now, we use --no-index to skip
+	# querying pypi and rely only on --find-links.
+	#
+	# NB! Use '--no-download' arg for 'virtualenv' is required,
+	# otherwise it downloads latest PIP version instead of bundled/pinned one.
+	# NB! Use '--copies' else /opt/stackstorm/st2/bin/python is symlink to
+	# /usr/bin/pythonx rather than copy - and this breaks pack install
+	# which follows the path to calculate the location of the bin directory
+
+	dh_virtualenv --extra-virtualenv-arg='--copies' --extra-virtualenv-arg='--no-download' \
+								'--upgrade-pip-to=$(PIP_VERSION)' \
+								--extra-pip-arg '--find-links=$(WHEELDIR)' \
+								--extra-pip-arg '--no-index' --no-test
+
+override_dh_compress:
+	dh_compress -X.conf
